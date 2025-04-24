@@ -11,7 +11,7 @@ RESULTS_DIR = os.path.join(BASE_DIR, "fuzz_results_phase1")
 # --- 퍼징 설정 ---
 # 테스트할 대상 LLM 모델 이름
 #TARGET_MODEL = "llama3.2-bllossom-kor-3B", "cogito", "gemma3"
-TARGET_MODEL = "cogito"
+TARGET_MODEL = "gemma3"
 MAX_ITERATIONS = 10    # 총 퍼징 반복 횟수
 LLM_TIMEOUT = 120       # LLM 응답 타임아웃 (초)
 
