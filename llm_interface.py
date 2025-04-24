@@ -1,6 +1,7 @@
 import requests
 import json
 import logging # 로깅 추가
+import config
 
 # 로거 설정 (필요에 따라 조정)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -9,9 +10,9 @@ logger = logging.getLogger(__name__)
 # Ollama 서버 주소 (기본값)
 OLLAMA_ENDPOINT = "http://localhost:11434/api/generate" 
 # 타임아웃 설정 (초 단위, 응답이 길어질 수 있으므로 넉넉하게 설정)
-REQUEST_TIMEOUT = 120 
+#REQUEST_TIMEOUT = 120 
 
-def get_ollama_response(model_name: str, prompt: str) -> str | None:
+def get_ollama_response(model_name: str, prompt: str, timeout: int) -> str | None:
     """
     Ollama API를 호출하여 지정된 모델로부터 프롬프트에 대한 응답을 받아옵니다.
 
@@ -33,9 +34,11 @@ def get_ollama_response(model_name: str, prompt: str) -> str | None:
         #     "num_predict": 512 # 최대 생성 토큰 수 등
         # }
     }
+    effective_timeout = timeout if timeout is not None else config.LLM_TIMEOUT
 
-    logger.info(f"Sending request to Ollama model: {model_name}")
-    # logger.debug(f"Prompt: {prompt[:100]}...") # 디버깅 시 프롬프트 일부 로깅
+    logger.info(
+        f"Ollama 모델에 요청 전송: {model_name} (Timeout: {effective_timeout}s)")
+    logger.debug(f"프롬프트 (일부): {prompt[:80]}...")
 
     try:
         # Ollama API에 POST 요청 보내기
@@ -43,14 +46,14 @@ def get_ollama_response(model_name: str, prompt: str) -> str | None:
             OLLAMA_ENDPOINT,
             headers=headers,
             data=json.dumps(data), # 데이터를 JSON 문자열로 변환
-            timeout=REQUEST_TIMEOUT 
+            timeout=effective_timeout 
         )
         
         # HTTP 오류 코드 확인 (4xx, 5xx)
         response.raise_for_status() 
 
     except requests.exceptions.Timeout:
-        logger.error(f"Ollama request timed out after {REQUEST_TIMEOUT} seconds.")
+        logger.error(f"Ollama request timed out after {effective_timeout} seconds.")
         return None
     except requests.exceptions.ConnectionError:
         logger.error("Could not connect to Ollama server. Is Ollama running?")
@@ -68,7 +71,7 @@ def get_ollama_response(model_name: str, prompt: str) -> str | None:
         # 응답 데이터 구조에서 실제 응답 텍스트 추출
         if 'response' in result:
             llm_answer = result['response'].strip()
-            # logger.debug(f"Ollama Response: {llm_answer[:100]}...") # 디버깅 시 응답 일부 로깅
+            logger.debug(f"Ollama Response: {llm_answer[:100]}...") # 디버깅 시 응답 일부 로깅
             return llm_answer
         else:
             logger.error(f"Ollama response does not contain 'response' key: {result}")
