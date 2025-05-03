@@ -128,11 +128,13 @@ class KoreanMutator:
             self.insert_invisible_chars,
             self.apply_fullwidth,
             self.mix_scripts_randomly,
+            self.mutate_syllable_order
         ]
         self.medium_level_funcs = [
             self.mutate_particles,
             self.mutate_endings,
-            self.mutate_synonyms
+            self.mutate_synonyms,
+            self.mutate_word_order
         ]
         self.high_level_funcs = [
             self.insert_korean_fillers,
@@ -203,6 +205,74 @@ class KoreanMutator:
             return []
 
     # --- 기존 Low-Level 변형 함수들 (mutate_random_syllable 제외) ---
+    # ★★★★★ 신규 변형 함수 1: 단어 순서 변경 ★★★★★
+    def mutate_word_order(self, text, probability=config.DEFAULT_PROB_WORD_ORDER):
+        """문장 내 인접한 단어의 순서를 확률적으로 변경합니다."""
+        if not isinstance(text, str) or len(text.strip()) == 0:
+            return text
+
+        # 간단하게 공백 기준으로 단어 분리 (더 정교하게 하려면 형태소 분석기 사용 가능)
+        words = text.split(' ')
+        if len(words) < 2:  # 단어가 2개 미만이면 순서 변경 불가
+            return text
+
+        mutated_words = list(words)  # 수정 가능한 리스트로 복사
+        num_swapped = 0
+
+        for i in range(len(mutated_words) - 1):
+            # 현재 단어와 다음 단어 모두 비어있지 않을 때만 시도
+            if mutated_words[i] and mutated_words[i+1] and random.random() < probability:
+                # 인접한 두 단어의 순서를 바꿈
+                mutated_words[i], mutated_words[i +
+                                                1] = mutated_words[i+1], mutated_words[i]
+                num_swapped += 1
+                # 한 번 바꾼 후에는 다음 인덱스로 건너뛰어 중복 스왑 방지 (선택적)
+                # i += 1 # 이 줄을 활성화하면 연속된 스왑은 일어나지 않음
+
+        if num_swapped > 0:
+            logger.debug(
+                f"Word order mutation applied: swapped {num_swapped} pairs.")
+            return ' '.join(mutated_words)  # 재조합
+        else:
+            return text  # 변경 없으면 원본 반환
+
+    # ★★★★★ 신규 변형 함수 2: 음절 순서 변경 ★★★★★
+    def mutate_syllable_order(self, text, probability=config.DEFAULT_PROB_SYLLABLE_ORDER):
+        """단어 내 음절(글자)의 순서를 확률적으로 섞습니다."""
+        if not isinstance(text, str) or len(text.strip()) == 0:
+            return text
+
+        words = text.split(' ')
+        mutated_words = []
+        modified = False
+
+        for word in words:
+            if not word:  # 빈 문자열은 그대로 추가
+                mutated_words.append(word)
+                continue
+
+            # 단어 내 모든 글자가 한글 음절 범위인지 확인 (간단한 체크)
+            is_korean_word = all('가' <= char <= '힣' for char in word)
+
+            if is_korean_word and len(word) > 1 and random.random() < probability:
+                syllables = list(word)  # 단어를 글자(음절) 리스트로 변환
+                random.shuffle(syllables)  # 음절 순서 섞기
+                mutated_word = "".join(syllables)
+                if mutated_word != word:
+                    mutated_words.append(mutated_word)
+                    modified = True
+                    logger.debug(
+                        f"Syllable order mutation applied: '{word}' -> '{mutated_word}'")
+                else:
+                    mutated_words.append(word)  # 섞었지만 결과가 같으면 원본 추가
+            else:
+                mutated_words.append(word)  # 한글 단어가 아니거나 확률 미달 시 원본 추가
+
+        if modified:
+            return ' '.join(mutated_words)
+        else:
+            return text
+        
     def mutate_spacing_typo(self, text, prob_space=config.DEFAULT_PROB_SPACING, prob_typo=config.DEFAULT_PROB_TYPO):
         """띄어쓰기 오류 및 간단한 오타를 확률적으로 발생시킵니다."""
         mutated_chars = []

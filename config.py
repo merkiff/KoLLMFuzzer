@@ -11,7 +11,7 @@ RESULTS_DIR = os.path.join(BASE_DIR, "fuzz_results_phase1")
 # --- 퍼징 설정 ---
 # 테스트할 대상 LLM 모델 이름
 #TARGET_MODEL = "llama3.2-bllossom-kor-3B", "cogito", "gemma3"
-TARGET_MODEL = "gemma3"
+TARGET_MODEL = "llama3.2-bllossom-kor-3B"
 MAX_ITERATIONS = 10    # 총 퍼징 반복 횟수
 LLM_TIMEOUT = 120       # LLM 응답 타임아웃 (초)
 
@@ -40,10 +40,12 @@ DEFAULT_PROB_FILLERS = 0.15
 DEFAULT_PROB_HOMOGLYPH = 0.1          # 유사 문자 치환 확률
 DEFAULT_PROB_INVISIBLE = 0.05          # 보이지 않는 문자 삽입 확률
 DEFAULT_PROB_JAMO_SPLIT_INVISIBLE = 0.1  # 자모 분리 및 보이지 않는 문자 삽입 확률
-DEFAULT_PROB_FULLWIDTH = 0.15         # 전각 문자 변환 확률
+DEFAULT_PROB_FULLWIDTH = 0.05        # 전각 문자 변환 확률
 DEFAULT_PROB_MIX_SCRIPTS = 0.02         # 다른 스크립트 문자 혼합 확률
+DEFAULT_PROB_WORD_ORDER = 0.1  # 단어 순서 변경 확률 (예: 10%)
+DEFAULT_PROB_SYLLABLE_ORDER = 0.05  # 음절 순서 변경 확률 (예: 5%, 가독성 저하 고려하여 낮게 설정)
 # (미구현) DEFAULT_PROB_FORMALITY = 0.15
-DEFAULT_PROB_SYNONYM = 0.4
+DEFAULT_PROB_SYNONYM = 0.1
 THESAURUS_PATH = os.path.join(BASE_DIR, "combined_thesaurus.pkl")  # 전처리된 사전 파일
 # (미구현) DEFAULT_PROB_TEMPLATE_INJECTION = 0.1
 # (미구현) DEFAULT_PROB_METADATA_SPOOFING = 0.1
